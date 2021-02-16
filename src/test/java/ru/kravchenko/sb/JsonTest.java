@@ -4,10 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
-import ru.kravchenko.sb.entity.Deals;
-import ru.kravchenko.sb.entity.Result;
-import ru.kravchenko.sb.entity.TimeItems;
-import ru.kravchenko.sb.entity.User;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.web.client.RestTemplate;
+import ru.kravchenko.sb.entity.*;
+import ru.kravchenko.sb.entity.request.DealsRequest;
 
 import java.io.IOException;
 import java.util.*;
@@ -23,8 +26,15 @@ public class JsonTest {
 
     @Test
     public void objectToJsonDeal() throws JsonProcessingException {
-//        System.out.println(objectMapper.writeValueAsString(getDeals()));
-        System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(getDeals()));
+        System.out.println(objectMapper.writeValueAsString(getDeals()));
+//        System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(getDeals()));
+    }
+
+    @Test
+    public void jsonToDeal() throws JsonProcessingException {
+        final String json = "{\"result\":[{\"id\":\"777\",\"description\":\"IHA MAN LALAL\"},{\"id\":\"888\",\"description\":\"Mister TROLOLOLO\"}],\"next\":1234,\"total\":4321,\"time\":{\"1111\":{\"id\":\"0909\",\"time\":\"Any time\"},\"2222\":{\"id\":\"77889898\",\"time\":\"What time is it?\"}}}\n";
+        Deals deals = objectMapper.readValue(json, Deals.class);
+        System.out.println(deals);
     }
 
     @Test
@@ -33,6 +43,65 @@ public class JsonTest {
         User user = objectMapper.readValue(json, User.class);
         System.out.println(user);
         Assert.assertNotNull(user);
+    }
+
+    @Test
+    public void getRequest() {
+        String url = "https://potolki.bitrix24.ru/rest/1/zm6bn1pw6el65nxa/crm.activity.list.json?OWNER_TYPE_ID=1&OWNER_ID=3340&next=250";
+        RestTemplate restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory());
+//        HttpHeaders httpHeaders = new HttpHeaders();
+//        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+        String result1 = restTemplate.getForObject("https://example.com/hotels/{hotel}/bookings/{booking}", String.class, "42", "21");
+
+        String result =  restTemplate.getForObject(
+                "https://potolki.bitrix24.ru/rest/1/zm6bn1pw6el65nxa/crm.activity.list.json?OWNER_TYPE_ID=1&OWNER_ID=3340&next=250{}", String.class, "");
+
+        System.out.println(result);
+    }
+
+    @Test
+    public void sendSimplePostRequest() throws JsonProcessingException {
+        String url = "https://hookb.in/ggRxrd1Wm7FwWW1NZQ7m";
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity entity = new HttpEntity(objectMapper.writeValueAsString(getDeals()), httpHeaders);
+        String result = restTemplate.postForObject(url, entity, String.class);
+
+        System.out.println(result);
+    }
+
+    @Test
+    public void sendPostRequestToB24() throws JsonProcessingException {
+        DealsRequest dealsRequest = new DealsRequest();
+        dealsRequest.setOrder(getOrderMap());
+        dealsRequest.setFilter(getFilterMap());
+        dealsRequest.setSelect(getSelectList());
+
+        String url = "https://hookb.in/ggRxrd1Wm7FwWW1NZQ7m";
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity entity = new HttpEntity(objectMapper.writeValueAsString(dealsRequest), httpHeaders);
+        String result = restTemplate.postForObject(url, entity, String.class);
+
+        System.out.println(result);
+    }
+
+    private Map<String, Integer> getFilterMap() {
+        return Map.of(">" + Select.STAGE_ID.name(),50);
+    }
+
+    private Map<String, String> getOrderMap() {
+        return Map.of(Select.STAGE_ID.name(),"ASC");
+    }
+
+    private List<String> getSelectList() {
+        return List.of(Select.ID.name(), Select.TITLE.name(), Select.STAGE_ID.name(),
+                Select.PROBABILITY.name(), Select.OPPORTUNITY.name(), Select.CURRENCY_ID.name());
     }
 
     private Deals getDeals() {
@@ -45,7 +114,7 @@ public class JsonTest {
         return deals;
     }
 
-    private List<Result> getResultList(){
+    private List<Result> getResultList() {
         Result result1 = new Result();
         result1.setId("777");
         result1.setDescription("IHA MAN LALAL");
@@ -58,7 +127,7 @@ public class JsonTest {
         return resultList;
     }
 
-    private Map <String, TimeItems> getTime(){
+    private Map<String, TimeItems> getTime() {
         TimeItems timeItems1 = new TimeItems();
         timeItems1.setId("0909");
         timeItems1.setTime("Any time");
