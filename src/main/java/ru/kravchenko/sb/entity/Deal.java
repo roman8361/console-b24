@@ -31,7 +31,6 @@ public class Deal {
 //    private Date BEGINDATE;
 //    private Date CLOSEDATE;
 
-
 //    private String TITLE;
 //    private String OPPORTUNITY;
 
