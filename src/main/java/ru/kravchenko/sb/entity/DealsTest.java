@@ -8,7 +8,7 @@ import java.util.Map;
 
 @Getter
 @Setter
-public class Deals {
+public class DealsTest {
 
     private List<Result> result;
 

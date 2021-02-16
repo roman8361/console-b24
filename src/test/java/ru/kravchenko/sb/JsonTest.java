@@ -1,18 +1,26 @@
 package ru.kravchenko.sb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 import ru.kravchenko.sb.entity.*;
 import ru.kravchenko.sb.entity.request.DealsRequest;
+import ru.kravchenko.sb.utils.Utils;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class JsonTest {
@@ -22,6 +30,22 @@ public class JsonTest {
     @Test
     public void objectToJson() throws JsonProcessingException {
         System.out.println(objectMapper.writeValueAsString(getUser()));
+//        System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(getUser()));
+    }
+
+    @Test
+    public void jsonToUser() throws JsonProcessingException {
+        String json = "{\"id\":\"702a812f-134e-468e-ada0-6fc31d101921\",\"name\":\"Ivano\",\"age\":18,\"birthday\":\"2021-02-16T12:42:34.788Z\"}";
+        User user = objectMapper.readValue(json, User.class);
+        System.out.println(user);
+
+    }
+
+    @Test
+    public void jsonToUserFromFile() throws IOException {
+        String json = Utils.readFile(getClass().getResourceAsStream("/ex5.json"));
+        User user = objectMapper.readValue(json, User.class);
+        System.out.println(user);
     }
 
     @Test
@@ -31,10 +55,20 @@ public class JsonTest {
     }
 
     @Test
-    public void jsonToDeal() throws JsonProcessingException {
+    public void jsonToDealTest() throws JsonProcessingException {
         final String json = "{\"result\":[{\"id\":\"777\",\"description\":\"IHA MAN LALAL\"},{\"id\":\"888\",\"description\":\"Mister TROLOLOLO\"}],\"next\":1234,\"total\":4321,\"time\":{\"1111\":{\"id\":\"0909\",\"time\":\"Any time\"},\"2222\":{\"id\":\"77889898\",\"time\":\"What time is it?\"}}}\n";
-        Deals deals = objectMapper.readValue(json, Deals.class);
-        System.out.println(deals);
+        DealsTest dealsTest = objectMapper.readValue(json, DealsTest.class);
+        System.out.println(dealsTest);
+    }
+
+    @Test
+    public void jsonToDeal() throws IOException {
+        String json = Utils.readFile(getClass().getResourceAsStream("/ex4.json"));
+        System.out.println(json);
+        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES); //TODO настройка игнорирует мапинг полей, которых нет в DTO
+        Deal deal = objectMapper.readValue(json, Deal.class);
+
+        System.out.println(deal.getCurrencyId());
     }
 
     @Test
@@ -47,7 +81,7 @@ public class JsonTest {
 
     @Test
     public void getRequest() {
-        String url = "https://potolki.bitrix24.ru/rest/1/zm6bn1pw6el65nxa/crm.activity.list.json?OWNER_TYPE_ID=1&OWNER_ID=3340&next=250";
+        String url = "https://******.bitrix24.ru/rest/1/????????";
         RestTemplate restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory());
 //        HttpHeaders httpHeaders = new HttpHeaders();
 //        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -55,14 +89,14 @@ public class JsonTest {
         String result1 = restTemplate.getForObject("https://example.com/hotels/{hotel}/bookings/{booking}", String.class, "42", "21");
 
         String result =  restTemplate.getForObject(
-                "https://potolki.bitrix24.ru/rest/1/zm6bn1pw6el65nxa/crm.activity.list.json?OWNER_TYPE_ID=1&OWNER_ID=3340&next=250{}", String.class, "");
+                "https://******.bitrix24.ru/rest/1/????????", String.class, "");
 
         System.out.println(result);
     }
 
     @Test
     public void sendSimplePostRequest() throws JsonProcessingException {
-        String url = "https://hookb.in/ggRxrd1Wm7FwWW1NZQ7m";
+        String url = "https://hookb.in/G9Zy1a3ZL1hWGGeQqzOm";
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -74,25 +108,31 @@ public class JsonTest {
     }
 
     @Test
-    public void sendPostRequestToB24() throws JsonProcessingException {
+    public void sendPostRequestToB24() throws JsonProcessingException, UnsupportedEncodingException, JSONException {
         DealsRequest dealsRequest = new DealsRequest();
         dealsRequest.setOrder(getOrderMap());
         dealsRequest.setFilter(getFilterMap());
         dealsRequest.setSelect(getSelectList());
 
-        String url = "https://hookb.in/ggRxrd1Wm7FwWW1NZQ7m";
+//        String url = "https://hookb.in/G9Zy1a3ZL1hWGGeQqzOm";
+        String url = "https://******.bitrix24.ru/rest/1/????????";
+
         RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+        httpHeaders.setContentType(MediaType.TEXT_PLAIN);
 
         HttpEntity entity = new HttpEntity(objectMapper.writeValueAsString(dealsRequest), httpHeaders);
         String result = restTemplate.postForObject(url, entity, String.class);
 
-        System.out.println(result);
+        JSONObject object = new JSONObject(result);
+
+        System.out.println(object.get("result"));
     }
 
     private Map<String, Integer> getFilterMap() {
-        return Map.of(">" + Select.STAGE_ID.name(),50);
+        return Map.of(">" + Select.PROBABILITY.name(),50);
     }
 
     private Map<String, String> getOrderMap() {
@@ -104,14 +144,14 @@ public class JsonTest {
                 Select.PROBABILITY.name(), Select.OPPORTUNITY.name(), Select.CURRENCY_ID.name());
     }
 
-    private Deals getDeals() {
-        Deals deals = new Deals();
-        deals.setNext(1234);
-        deals.setTotal(4321);
-        deals.setResult(getResultList());
-        deals.setTime(getTime());
+    private DealsTest getDeals() {
+        DealsTest dealsTest = new DealsTest();
+        dealsTest.setNext(1234);
+        dealsTest.setTotal(4321);
+        dealsTest.setResult(getResultList());
+        dealsTest.setTime(getTime());
 
-        return deals;
+        return dealsTest;
     }
 
     private List<Result> getResultList() {
