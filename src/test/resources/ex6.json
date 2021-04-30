@@ -1,1 +1,6 @@
-{"id":"f96e939c-4292-4688-8bae-0cc2d8679cde","name":"Ivano","age":18,"birthday":"2021-02-16T12:46:18.153Z"}
+{
+  "id": "f96e939c-4292-4688-8bae-0cc2d8679cde",
+  "name": "Ivano",
+  "age": 18,
+  "birthday": "2021-02-16T12:46:18.153Z"
+}

@@ -1,0 +1,7 @@
+{
+  "bounce": {
+    "final-recipient": "<email>",
+    "status": "<code>",
+    "type": "failed"
+  }
+}

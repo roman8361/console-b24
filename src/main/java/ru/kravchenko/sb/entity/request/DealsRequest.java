@@ -14,10 +14,10 @@ import java.util.Map;
 @Setter
 public class DealsRequest {
 
-    private Map <String, String> order;
+    private Map<String, String> order;
 
     private List<String> select;
 
-    private Map <String, Integer> filter;
+    private Map<String, Integer> filter;
 
 }

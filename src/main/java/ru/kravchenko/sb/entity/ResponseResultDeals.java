@@ -1,14 +1,12 @@
 package ru.kravchenko.sb.entity;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.util.List;
 
-@Getter
-@Setter
+@Data
 public class ResponseResultDeals {
 
-    private List<Deal> deals;
+    private List<Deal> result;
 
 }

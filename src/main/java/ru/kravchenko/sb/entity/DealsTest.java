@@ -16,6 +16,6 @@ public class DealsTest {
 
     private Integer total;
 
-    private Map <String, TimeItems> time;
+    private Map<String, TimeItems> time;
 
 }

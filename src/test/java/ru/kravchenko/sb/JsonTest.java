@@ -3,29 +3,37 @@ package ru.kravchenko.sb;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import com.google.gson.Gson;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 import ru.kravchenko.sb.entity.*;
+import ru.kravchenko.sb.entity.request.DealsAddRequest;
 import ru.kravchenko.sb.entity.request.DealsRequest;
 import ru.kravchenko.sb.utils.Utils;
+import ru.qatools.json2pojo.beans.Any;
+import ru.qatools.json2pojo.beans.DealB24;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import static org.junit.Assert.assertThat;
 
 public class JsonTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private final String urlHookb = "https://hookb.in/JKMVpJxeexTJPPWVO11y";
+
+    private final String webhook = "https://potolki.bitrix24.ru/rest/1/zm6bn1pw6el65nxa/";
 
     @Test
     public void objectToJson() throws JsonProcessingException {
@@ -38,7 +46,6 @@ public class JsonTest {
         String json = "{\"id\":\"702a812f-134e-468e-ada0-6fc31d101921\",\"name\":\"Ivano\",\"age\":18,\"birthday\":\"2021-02-16T12:42:34.788Z\"}";
         User user = objectMapper.readValue(json, User.class);
         System.out.println(user);
-
     }
 
     @Test
@@ -63,12 +70,54 @@ public class JsonTest {
 
     @Test
     public void jsonToDeal() throws IOException {
-        String json = Utils.readFile(getClass().getResourceAsStream("/ex4.json"));
-        System.out.println(json);
+        String json = Utils.readFile(getClass().getResourceAsStream("/ex3.json"));
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES); //TODO настройка игнорирует мапинг полей, которых нет в DTO
         Deal deal = objectMapper.readValue(json, Deal.class);
+        System.out.println(deal.getOPPORTUNITY());
+    }
 
-        System.out.println(deal.getCurrencyId());
+    @Test
+    public void jsonToDealsList() throws IOException {
+        String json = Utils.readFile(getClass().getResourceAsStream("/ex1.json"));
+        ResponseResultDeals resultDeals = getDealFromJson(json);
+        System.out.println(resultDeals);
+    }
+
+    @Test
+    public void jsonToAny() throws JsonProcessingException {
+         String json = "{\n" +
+                "  \"bounce\": {\n" +
+                "    \"final-recipient\": \"<email>\",\n" +
+                "    \"status\": \"<cod2222e>\",\n" +
+                "    \"type\": \"failed\"\n" +
+                "  }\n" +
+                "}";
+        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES); //TODO настройка игнорирует мапинг полей, которых нет в DTO
+        Any any = objectMapper.readValue(json, Any.class);
+        System.out.println(any.getBounce().getStatus());
+
+    }
+
+    @Test
+    public void jsonToAnyFromFile() throws IOException {
+        String json = Utils.readFile(getClass().getResourceAsStream("/any.json"));
+        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        Any any = objectMapper.readValue(json, Any.class);
+        System.out.println(any.getBounce().getStatus());
+    }
+
+    @Test
+    public void jsonToDealB24FromFile() throws IOException {
+        String json = Utils.readFile(getClass().getResourceAsStream("/dealB24.json"));
+        Gson gson = new Gson();
+        DealB24 dealB24 = gson.fromJson(json, DealB24.class);
+        System.out.println(dealB24.getResult().getTITLE());
+    }
+
+
+    private ResponseResultDeals getDealFromJson(String json) throws JsonProcessingException {
+        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES); //TODO настройка игнорирует мапинг полей, которых нет в DTO
+        return objectMapper.readValue(json, ResponseResultDeals.class);
     }
 
     @Test
@@ -80,42 +129,46 @@ public class JsonTest {
     }
 
     @Test
+//    @Ignore
     public void getRequest() {
-        String url = "https://******.bitrix24.ru/rest/1/????????";
+        String url = "https://potolki.bitrix24.ru/rest/1/zm6bn1pw6el65nxa/crm.activity.list.json?OWNER_TYPE_ID=1&OWNER_ID=3340&next=250";
         RestTemplate restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory());
 //        HttpHeaders httpHeaders = new HttpHeaders();
 //        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
 
-        String result1 = restTemplate.getForObject("https://example.com/hotels/{hotel}/bookings/{booking}", String.class, "42", "21");
+        String request1 = "https://example.com/hotels/{hotel}/bookings/{booking}";
+        String request2 = "https://potolki.bitrix24.ru/rest/1/zm6bn1pw6el65nxa/crm.activity.list.json?OWNER_TYPE_ID=1&OWNER_ID=3340&next=250{}";
+        String request3 = "https://potolki.bitrix24.ru/rest/1/zm6bn1pw6el65nxa/crm.deal.get";
+        String request4 = "https://potolki.bitrix24.ru/rest/1/zm6bn1pw6el65nxa/crm.deal.get?id=4718";
 
-        String result =  restTemplate.getForObject(
-                "https://******.bitrix24.ru/rest/1/????????", String.class, "");
+        String result1 = restTemplate.getForObject(request1, String.class, "42", "21");
+
+        String result = restTemplate.getForObject( request4, String.class);
 
         System.out.println(result);
     }
 
     @Test
     public void sendSimplePostRequest() throws JsonProcessingException {
-        String url = "https://hookb.in/G9Zy1a3ZL1hWGGeQqzOm";
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_JSON);
 
         HttpEntity entity = new HttpEntity(objectMapper.writeValueAsString(getDeals()), httpHeaders);
-        String result = restTemplate.postForObject(url, entity, String.class);
+        String result = restTemplate.postForObject(urlHookb, entity, String.class);
 
         System.out.println(result);
     }
 
     @Test
-    public void sendPostRequestToB24() throws JsonProcessingException, UnsupportedEncodingException, JSONException {
+    public void sendPostRequestToB24Get50Deals() throws JsonProcessingException, UnsupportedEncodingException, JSONException {
         DealsRequest dealsRequest = new DealsRequest();
         dealsRequest.setOrder(getOrderMap());
         dealsRequest.setFilter(getFilterMap());
         dealsRequest.setSelect(getSelectList());
 
 //        String url = "https://hookb.in/G9Zy1a3ZL1hWGGeQqzOm";
-        String url = "https://******.bitrix24.ru/rest/1/????????";
+        String url = "https://potolki.bitrix24.ru/rest/1/zm6bn1pw6el65nxa/crm.deal.list/";
 
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
@@ -128,15 +181,61 @@ public class JsonTest {
 
         JSONObject object = new JSONObject(result);
 
-        System.out.println(object.get("result"));
+        ResponseResultDeals resultDeals = getDealFromJson(object.toString());
+        Assert.assertNotNull(resultDeals);
+        System.out.println(object.toString());
     }
 
+    @Test //TODO что работает
+    public void sendPostRequestToB24AddDeal() throws JsonProcessingException {
+        DealsAddRequest dealsAddRequest = new DealsAddRequest();
+        Deal deal = new Deal();
+        deal.setTITLE("FROM 3213JAVA из Джавы с любовью2231");
+        dealsAddRequest.setFields(Map.of("TITLE", "FROM 3213JAVA из Джавы с любовью2231")); //
+//        String url = "https://hookb.in/JKMVpJxeexTJPPWVO11y";
+        String url = "https://potolki.bitrix24.ru/rest/1/zm6bn1pw6el65nxa/crm.deal.add/";
+
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+//        httpHeaders.setContentType(MediaType.TEXT_PLAIN);
+
+        HttpEntity entity = new HttpEntity(objectMapper.writeValueAsString(dealsAddRequest), httpHeaders);
+        String result = restTemplate.postForObject(url, entity, String.class);
+
+        System.out.println(result);
+    }
+
+    @Test //TODO что работает
+    public void getResponseDealById() throws JsonProcessingException {
+        RestTemplate restTemplate = new RestTemplate();
+        String url = webhook + "crm.deal.get?id=4718";
+
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+        restTemplate.getMessageConverters()
+                .add(0, new StringHttpMessageConverter(Charset.forName("UTF-8")));
+
+        String json = response.getBody();
+
+        Gson gson = new Gson();
+        DealB24 dealB24 = gson.fromJson(json, DealB24.class);
+        System.out.println(dealB24.getResult().getTITLE());
+    }
+
+    @Test
+    public void decoderTest(){
+        String code = "\\u0438\\u0437 \\u0414\\u0436\\u0430\\u0432\\u044b \\u0441 \\u043b\\u044e\\u0431\\u043e\\u0432\\u044c\\u044e2231";
+        System.out.println(Utils.decoder(code));
+    }
+
+
     private Map<String, Integer> getFilterMap() {
-        return Map.of(">" + Select.PROBABILITY.name(),50);
+        return Map.of(">" + Select.PROBABILITY.name(), 50);
     }
 
     private Map<String, String> getOrderMap() {
-        return Map.of(Select.STAGE_ID.name(),"ASC");
+        return Map.of(Select.STAGE_ID.name(), "ASC");
     }
 
     private List<String> getSelectList() {
@@ -186,6 +285,7 @@ public class JsonTest {
     private User getUser() {
         return new User("Ivano", 18, new Date());
     }
+
 
 //        @Test
 
@@ -239,5 +339,7 @@ public class JsonTest {
 //            result.setRoomNumber("1");
 //            return result;
 //        }
+
+
 
 }

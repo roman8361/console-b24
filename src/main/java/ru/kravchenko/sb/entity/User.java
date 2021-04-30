@@ -8,7 +8,7 @@ import java.util.Date;
 
 @Getter
 @Setter
-public class User extends AbstractEntity{
+public class User extends AbstractEntity {
 
     private String name;
 
